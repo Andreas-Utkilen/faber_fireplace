@@ -8,14 +8,11 @@ class Faber:
         self.port = port
         self.connect()
         
-        #self.socket.setblocking(0)
         self.req_prefix = [0xa1, 0xa2, 0xa3, 0xa4, 0x00, 0xfa, 0x00, 0x02]
         self.req_command_prefix = [0x00, 0x00, 0x7d, 0xed, 0x00, 0x00, 0x10, 0x40, 0xff, 0xff, 0x00]
         self.req_name_prefix =  [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00]
         self.req_status_prefix = [0x00, 0x00, 0x7d, 0xed, 0x00, 0x00, 0x10, 0x30, 0x00, 0x00, 0x00]
         self.req_suffix = [0x00, 0xfa, 0xfb, 0xfc, 0xfd]
-
-        self.next_block = b''
 
     def connect(self):
         try:
@@ -34,13 +31,18 @@ class Faber:
             self.socket.sendall(data)
         except socket.error:
             print('Failed to send data')
+            self.close()
+            self.connect()
+            return b''
         res = b''
         while len(res) < (length):
             try:
                 res += self.socket.recv(min(length, length-len(res)))
             except socket.error:
                 print('Failed to receive data')
-        #i = res.find(b'\xfa\xfb\xfc\xfd')
+                self.close()
+                self.connect()
+                return b''
         res = struct.unpack(f'!{length}B', res)
         return res
 
@@ -93,7 +95,7 @@ if __name__ == "__main__":
     temp = 26.5
     fireplace = Faber(HOST, PORT)
     set_temp, current_temp, flame_height, flame_width, mode = fireplace.get_status()
-    fireplace.set_on()
+    #fireplace.set_on()
 
     print("Set temp: ", set_temp)
     print("Current temp: ", current_temp)
